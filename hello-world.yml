@@ -1,0 +1,16 @@
+name: Hello World Workflow
+
+on: [push]  # Triggers on code push
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest  # GitHub's Linux runner
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  # Reusable action to fetch repo
+      - name: Say Hello
+        run: echo "Hello, GitHub Actions!"
+
+
+
+        

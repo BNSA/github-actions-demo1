@@ -22,7 +22,7 @@ jobs:
       - name: Only runs after greet succeeds
         run: echo "Greet job completed — now doing follow-up work!"
 
-  secret-demo:                     # ← New job using secret
+  secret-demo:
     runs-on: ubuntu-latest
     steps:
       - name: Use the secret safely
@@ -30,4 +30,24 @@ jobs:
           SECRET_VALUE: ${{ secrets.MY_SECRET_MESSAGE }}
         run: |
           echo "Secret loaded (masked in logs)"
-          echo "Last 4 chars: ${SECRET_VALUE: -4}"
+          echo 'Last 4 chars: ${SECRET_VALUE: -4}'
+          # Optional: this will show *** in logs
+          echo "Full secret (masked): $SECRET_VALUE"
+
+  artifact-demo:
+    runs-on: ubuntu-latest
+    needs: secret-demo
+    steps:
+      - name: Create a sample file
+        run: |
+          echo "This is a demo artifact created by GitHub Actions!" > demo-artifact.txt
+          echo "Run ID: ${{ github.run_id }}" >> demo-artifact.txt
+          echo "Date: $(date)" >> demo-artifact.txt
+          echo "Runner OS: $RUNNER_OS" >> demo-artifact.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-artifact-files
+          path: demo-artifact.txt
+          retention-days: 7

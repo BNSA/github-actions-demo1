@@ -3,21 +3,31 @@ name: Hello World Workflow
 on: [push]
 
 jobs:
-  greet:                          # ← Your original job
+  greet:
     runs-on: ubuntu-latest
     steps:
       - name: Say Hello
         run: echo "Hello, GitHub Actions!"
 
-  another-job:                    # ← New job added
+  another-job:
     runs-on: ubuntu-latest
     steps:
       - name: Do something else
         run: echo "This is a second job running in parallel!"
 
-  dependent-job:                  # ← Example of sequential/dependent job
+  dependent-job:
     runs-on: ubuntu-latest
-    needs: greet                    # ← This waits for 'greet' to finish successfully
+    needs: greet
     steps:
       - name: Only runs after greet succeeds
-        run: echo "Greet job completed — now doing follow-up work!"    
+        run: echo "Greet job completed — now doing follow-up work!"
+
+  secret-demo:                     # ← New job using secret
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use the secret safely
+        env:
+          SECRET_VALUE: ${{ secrets.MY_SECRET_MESSAGE }}
+        run: |
+          echo "Secret loaded (masked in logs)"
+          echo "Last 4 chars: ${SECRET_VALUE: -4}"

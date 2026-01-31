@@ -1,31 +1,27 @@
 name: Hello World - Beginner Demo (All Features)
 
-on: [push]  # Triggers on every push to any branch
+on: [push]
 
 jobs:
-  # 1. Simple greeting job
   greet:
     runs-on: ubuntu-latest
     steps:
       - name: Say Hello
         run: echo "Hello, GitHub Actions world!"
 
-  # 2. Parallel independent job
   another-job:
     runs-on: ubuntu-latest
     steps:
       - name: Parallel task
         run: echo "This job runs at the same time as greet!"
 
-  # 3. Job that depends on greet succeeding
   dependent-job:
     runs-on: ubuntu-latest
-    needs: greet  # Waits for 'greet' to finish successfully
+    needs: greet
     steps:
       - name: Follow-up after greet
         run: echo "Greet job is done — proceeding!"
 
-  # 4. Secret handling (masked in logs)
   secret-demo:
     runs-on: ubuntu-latest
     steps:
@@ -37,42 +33,40 @@ jobs:
           echo 'Last 4 characters (visible): ${SECRET_VALUE: -4}'
           echo "Full secret (should show ***): $SECRET_VALUE"
 
-  # 5. Tests + multiple artifacts + matrix example
   test-matrix-and-artifacts:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        test-group: [group-a, group-b, group-c]  # Simple matrix: 3 variations
-        # You could add more: os: [ubuntu-latest, windows-latest]
-      fail-fast: false  # Continue even if one matrix fails (good for demo)
+        test-group: [group-a, group-b, group-c]
+      fail-fast: false
     steps:
       - name: Run fake tests for matrix ${{ matrix.test-group }}
+        continue-on-error: true          # ← Added: step fails but job continues & is marked success
         run: |
           echo "Running tests in group: ${{ matrix.test-group }}"
 
           # Fake test 1: always passes
           echo "Test 1 (pass): OK"
 
-          # Fake test 2: fails only in group-b (for demo failure)
+          # Fake test 2: fails only in group-b (for demo)
           if [ "${{ matrix.test-group }}" = "group-b" ]; then
             echo "Test 2 (fail in group-b): FAILED"
-            exit 1  # Forces step failure in one matrix variation
+            exit 1
           else
             echo "Test 2 (pass): OK"
           fi
 
       - name: Create simple TXT log file
-        if: always()  # Run even if tests fail
+        if: always()
         run: |
           echo "Matrix group: ${{ matrix.test-group }}" > report-${{ matrix.test-group }}.txt
           echo "Runner: $RUNNER_OS" >> report-${{ matrix.test-group }}.txt
           echo "Job completed at: $(date)" >> report-${{ matrix.test-group }}.txt
-          echo "Secret last 4 chars: ${SECRET_VALUE: -4}" >> report-${{ matrix.test-group }}.txt  # Won't show full secret
+          echo "Secret last 4 chars: ${SECRET_VALUE: -4}" >> report-${{ matrix.test-group }}.txt
 
       - name: Generate JUnit XML test report
         if: always()
         run: |
-          # Basic JUnit XML with dynamic matrix info
           cat << EOF > test-report-${{ matrix.test-group }}.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <testsuites>
@@ -108,4 +102,5 @@ jobs:
           name: junit-xml-${{ matrix.test-group }}
           path: test-report-${{ matrix.test-group }}.xml
           retention-days: 7
+
           

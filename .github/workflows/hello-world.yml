@@ -1,85 +1,111 @@
-name: Hello World Workflow with Tests & Report
+name: Hello World - Beginner Demo (All Features)
 
-on: [push]
+on: [push]  # Triggers on every push to any branch
 
 jobs:
+  # 1. Simple greeting job
   greet:
     runs-on: ubuntu-latest
     steps:
       - name: Say Hello
-        run: echo "Hello, GitHub Actions!"
+        run: echo "Hello, GitHub Actions world!"
 
+  # 2. Parallel independent job
   another-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Do something else
-        run: echo "This is a second job running in parallel!"
+      - name: Parallel task
+        run: echo "This job runs at the same time as greet!"
 
+  # 3. Job that depends on greet succeeding
   dependent-job:
     runs-on: ubuntu-latest
-    needs: greet
+    needs: greet  # Waits for 'greet' to finish successfully
     steps:
-      - name: Only runs after greet succeeds
-        run: echo "Greet job completed — now doing follow-up work!"
+      - name: Follow-up after greet
+        run: echo "Greet job is done — proceeding!"
 
+  # 4. Secret handling (masked in logs)
   secret-demo:
     runs-on: ubuntu-latest
     steps:
-      - name: Use the secret safely
+      - name: Use secret (must be set in repo Settings > Secrets)
         env:
           SECRET_VALUE: ${{ secrets.MY_SECRET_MESSAGE }}
         run: |
-          echo "Secret loaded (masked in logs)"
-          echo 'Last 4 chars: ${SECRET_VALUE: -4}'
-          echo "Full secret (masked): $SECRET_VALUE"
+          echo "Secret is loaded but hidden!"
+          echo 'Last 4 characters (visible): ${SECRET_VALUE: -4}'
+          echo "Full secret (should show ***): $SECRET_VALUE"
 
-  test-and-report:
+  # 5. Tests + multiple artifacts + matrix example
+  test-matrix-and-artifacts:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        test-group: [group-a, group-b, group-c]  # Simple matrix: 3 variations
+        # You could add more: os: [ubuntu-latest, windows-latest]
+      fail-fast: false  # Continue even if one matrix fails (good for demo)
     steps:
-      - name: Run simple bash tests & generate JUnit report
+      - name: Run fake tests for matrix ${{ matrix.test-group }}
         run: |
-          # Create a simple "test" suite in bash
-          echo "Starting fake tests..."
+          echo "Running tests in group: ${{ matrix.test-group }}"
 
-          # Test 1: Should pass
-          if [ "hello" = "hello" ]; then
-            echo "Test 1 passed"
-            status="pass"
+          # Fake test 1: always passes
+          echo "Test 1 (pass): OK"
+
+          # Fake test 2: fails only in group-b (for demo failure)
+          if [ "${{ matrix.test-group }}" = "group-b" ]; then
+            echo "Test 2 (fail in group-b): FAILED"
+            exit 1  # Forces step failure in one matrix variation
           else
-            echo "Test 1 failed"
-            status="fail"
+            echo "Test 2 (pass): OK"
           fi
 
-          # Test 2: Should fail (for demo)
-          if [ "world" = "hello" ]; then
-            echo "Test 2 passed"
-          else
-            echo "Test 2 failed"
-            status="fail"
-          fi
+      - name: Create simple TXT log file
+        if: always()  # Run even if tests fail
+        run: |
+          echo "Matrix group: ${{ matrix.test-group }}" > report-${{ matrix.test-group }}.txt
+          echo "Runner: $RUNNER_OS" >> report-${{ matrix.test-group }}.txt
+          echo "Job completed at: $(date)" >> report-${{ matrix.test-group }}.txt
+          echo "Secret last 4 chars: ${SECRET_VALUE: -4}" >> report-${{ matrix.test-group }}.txt  # Won't show full secret
 
-          # Generate basic JUnit XML report
-          cat << 'EOF' > test-report.xml
+      - name: Generate JUnit XML test report
+        if: always()
+        run: |
+          # Basic JUnit XML with dynamic matrix info
+          cat << EOF > test-report-${{ matrix.test-group }}.xml
           <?xml version="1.0" encoding="UTF-8"?>
           <testsuites>
-            <testsuite name="Bash Demo Tests" tests="2" failures="1" time="0.1">
-              <testcase name="Test equality - should pass" classname="BashTests">
+            <testsuite name="Bash Demo - ${{ matrix.test-group }}" tests="2" failures="0" time="0.1">
+              <testcase name="Test 1 - Equality check" classname="BashTests">
                 <passed/>
               </testcase>
-              <testcase name="Test equality - should fail" classname="BashTests">
-                <failure message="Expected 'hello' but got 'world'">Assertion failed</failure>
-              </testcase>
-            </testsuite>
-          </testsuites>
+              <testcase name="Test 2 - Forced fail in group-b" classname="BashTests">
           EOF
 
-          # Show the report content (for logs)
-          cat test-report.xml
+          if [ "${{ matrix.test-group }}" = "group-b" ]; then
+            echo '                <failure message="Intentional failure for demo">Assertion failed</failure>' >> test-report-${{ matrix.test-group }}.xml
+          else
+            echo '                <passed/>' >> test-report-${{ matrix.test-group }}.xml
+          fi
 
-      - name: Upload test report artifact
-        if: always()  # Run even if tests "fail"
+          echo '              </testcase>' >> test-report-${{ matrix.test-group }}.xml
+          echo '            </testsuite>' >> test-report-${{ matrix.test-group }}.xml
+          echo '          </testsuites>' >> test-report-${{ matrix.test-group }}.xml
+
+      - name: Upload TXT log artifact (one per matrix)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-report-junit
-          path: test-report.xml
+          name: log-txt-${{ matrix.test-group }}
+          path: report-${{ matrix.test-group }}.txt
           retention-days: 7
+
+      - name: Upload JUnit XML report artifact (one per matrix)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-xml-${{ matrix.test-group }}
+          path: test-report-${{ matrix.test-group }}.xml
+          retention-days: 7
+          

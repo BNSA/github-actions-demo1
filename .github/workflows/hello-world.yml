@@ -41,7 +41,7 @@ jobs:
       fail-fast: false
     steps:
       - name: Run fake tests for matrix ${{ matrix.test-group }}
-        continue-on-error: true          # ← Added: step fails but job continues & is marked success
+        continue-on-error: true
         run: |
           echo "Running tests in group: ${{ matrix.test-group }}"
 
@@ -50,6 +50,7 @@ jobs:
 
           # Fake test 2: fails only in group-b (for demo)
           if [ "${{ matrix.test-group }}" = "group-b" ]; then
+            echo "::error::Intentional failure in group-b for demo purposes!"
             echo "Test 2 (fail in group-b): FAILED"
             exit 1
           else

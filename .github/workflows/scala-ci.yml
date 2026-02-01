@@ -1,9 +1,11 @@
-name: Scala CI (JUnit XML)
+name: Scala CI (sbt + ScalaTest)
 
 on:
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -11,10 +13,10 @@ jobs:
 
     strategy:
       matrix:
-        java: [11, 17, 21]
+        java: [11, 17]
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Set up Java
@@ -23,27 +25,20 @@ jobs:
           distribution: temurin
           java-version: ${{ matrix.java }}
 
-      - name: Cache sbt
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.ivy2/cache
-            ~/.sbt
-            ~/.coursier
-          key: sbt-${{ runner.os }}-${{ hashFiles('**/*.sbt') }}
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
 
       - name: Run tests
         run: |
           sbt clean test
-          echo "=== Listing generated test reports ==="
+          echo "===== FILES UNDER target ====="
           find target -type f | sort
 
-      - name: Upload test reports
-        if: always()
+      - name: Upload ScalaTest reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: junit-java-${{ matrix.java }}
-          path: target/scala-*/test-reports/**/*.xml
+          name: scalatest-reports-java-${{ matrix.java }}
+          path: target/test-reports/**/*.xml
           if-no-files-found: error
-
 

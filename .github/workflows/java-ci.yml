@@ -5,37 +5,15 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  # Manual trigger from Actions tab
+  workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
-  publish-test-results:
-    runs-on: ubuntu-latest
-    needs: build-and-test             # Wait for tests to finish
-    if: always()                      # Run even if tests fail
-    steps:
-      - name: Download test reports
-        uses: actions/download-artifact@v4
-        with:
-          name: junit-report-java-*   # Matches your artifact names
-          path: test-reports/
-
-      - name: Publish Test Report
-        uses: dorny/test-reporter@v1
-        with:
-          artifact: junit-report-java-*   # wildcard to catch all
-          name: Java Maven Test Results
-          path: 'test-reports/**/*.xml'   # find all XML files
-          reporter: junit
-          fail-on-error: false
-
-
     strategy:
       fail-fast: false
       matrix:
-        java: ['11', '17', '21']          # Test multiple JDK versions
+        java: ['11', '17', '21']
 
     name: Java ${{ matrix.java }} with Maven
 
@@ -47,8 +25,8 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: ${{ matrix.java }}
-          distribution: temurin            # Eclipse Temurin (reliable)
-          cache: maven                     # Cache Maven dependencies (~/.m2)
+          distribution: temurin
+          cache: maven
 
       - name: Compile project
         run: mvn clean compile
@@ -56,23 +34,44 @@ jobs:
       - name: Run tests & generate JUnit report
         run: mvn clean test
 
-      - name: Upload JUnit test report artifact
-        if: always()                       # Save report even if tests fail
+      - name: Upload JUnit test report artifact (per matrix)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: junit-report-java-${{ matrix.java }}
-          path: target/surefire-reports/*.xml   # Maven Surefire default output
+          name: test-reports-matrix
+          path: target/surefire-reports/*.xml
           retention-days: 7
 
       - name: Package JAR (optional)
-        if: success()                      # Only on success
+        if: success()
         run: mvn clean package
 
-      - name: Upload assembled JAR artifact
+      - name: Upload assembled JAR artifact (per matrix)
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: java-app-jar-${{ matrix.java }}
-          path: target/*.jar               # Adjust if using specific naming
+          name: app-jar-matrix
+          path: target/*.jar
           retention-days: 3
+
+  publish-test-results:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: always()
+    steps:
+      - name: Download all test report artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: test-reports-matrix
+          path: test-reports/
+
+      - name: Publish Test Report Summary
+        uses: dorny/test-reporter@v1
+        with:
+          artifact: test-reports-matrix
+          name: Java Maven Test Results
+          path: 'test-reports/**/*.xml'
+          reporter: junit
+          fail-on-error: false
+
           

@@ -34,11 +34,11 @@ jobs:
       - name: Run tests & generate JUnit report
         run: mvn clean test
 
-      - name: Upload JUnit XML report (fixed name for all)
-        continue-on-error: true
+      - name: Upload JUnit XML report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-all
+          name: test-reports-java-${{ matrix.java }}
           path: target/surefire-reports/*.xml
           if-no-files-found: warn
           retention-days: 7
@@ -60,11 +60,12 @@ jobs:
     needs: build-and-test
     if: always()
     steps:
-      - name: Download test reports (fixed artifact name)
+      - name: Download all test report artifacts
         uses: actions/download-artifact@v4
         with:
-          name: test-reports-all
+          pattern: test-reports-java-*   # Downloads ALL artifacts matching pattern
           path: test-reports/
+          merge-multiple: true           # Merges files from all into one folder
 
       - name: Debug - List downloaded files
         run: |
@@ -80,6 +81,8 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Java Maven Test Results
-          path: 'test-reports/**/*.xml'   # Direct path – no artifact input needed
+          path: 'test-reports/**/*.xml'
           reporter: java-junit
           fail-on-error: false
+
+          

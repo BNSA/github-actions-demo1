@@ -10,8 +10,8 @@ class AppTest {
     }
 
     // To intentionally create a failing test for demo purposes, uncomment the block below:
-    // @Test
-    // void intentionalFailure() {
-    //     assertEquals(1, 2, "This test should fail for demo");
-    // }
+     @Test
+     void intentionalFailure() {
+        assertEquals(1, 2, "This test should fail for demo");
+     }
 }

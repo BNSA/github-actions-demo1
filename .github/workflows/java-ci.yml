@@ -34,7 +34,7 @@ jobs:
       - name: Run tests & generate JUnit report
         run: mvn clean test
 
-      - name: Upload JUnit XML report
+      - name: Upload JUnit XML report (unique per Java version)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -63,11 +63,11 @@ jobs:
       - name: Download all test report artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: test-reports-java-*   # Downloads ALL artifacts matching pattern
+          pattern: test-reports-java-*   # Downloads ALL matching artifacts
           path: test-reports/
           merge-multiple: true           # Merges files from all into one folder
 
-      - name: Debug - List downloaded files
+      - name: Debug - List downloaded files (before reporter)
         run: |
           echo "Current directory: $(pwd)"
           echo "Listing test-reports recursively:"
@@ -81,8 +81,6 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Java Maven Test Results
-          path: 'test-reports/**/*.xml'
+          path: 'test-reports/**/*.xml'   # Searches all subfolders for XML files
           reporter: java-junit
           fail-on-error: false
-
-          

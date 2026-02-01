@@ -1,11 +1,10 @@
-name: Scala CI (sbt with JUnit XML)
+name: Scala CI (JUnit XML)
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -17,11 +16,8 @@ jobs:
         scala: ['2.13.15', '3.3.3']
         java: ['11', '17', '21']
 
-    name: Scala ${{ matrix.scala }} | Java ${{ matrix.java }}
-
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -33,21 +29,18 @@ jobs:
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
-      - name: Compile
-        run: sbt ++${{ matrix.scala }}! compile
+      - name: Run tests
+        run: |
+          sbt ++${{ matrix.scala }}! clean test
+          find target -type f | sort
 
-      - name: Run tests (JUnit XML enabled)
-        run: sbt ++${{ matrix.scala }}! test
-
-      # sbt-junit-xml writes here
       - name: Upload JUnit XML reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: junit-scala-${{ matrix.scala }}-java-${{ matrix.java }}
+          name: junit-${{ matrix.scala }}-${{ matrix.java }}
           path: target/scala-*/test-reports/**/*.xml
           if-no-files-found: error
-          retention-days: 7
 
   publish-test-results:
     runs-on: ubuntu-latest
@@ -55,20 +48,16 @@ jobs:
     if: always()
 
     steps:
-      - name: Download all test reports
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
-          pattern: junit-scala-*
+          pattern: junit-*
           path: test-results
           merge-multiple: true
 
-      - name: Publish test summary
-        uses: mikepenz/action-junit-report@v4
+      - uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: "test-results/**/test-reports/**/*.xml"
-          check_name: "Scala sbt Test Results"
-          include_passed: true
+          report_paths: test-results/**/*.xml
+          check_name: Scala Test Results
           require_tests: true
-          fail_on_failure: false
 
 

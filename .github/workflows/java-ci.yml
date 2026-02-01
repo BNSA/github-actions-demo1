@@ -34,20 +34,21 @@ jobs:
       - name: Run tests & generate JUnit report
         run: mvn clean test
 
-      - name: Upload JUnit XML report (unique per Java version)
-        if: always()
+      - name: Upload JUnit XML report (fixed name for all matrix jobs)
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-java-${{ matrix.java }}
+          name: test-reports-all
           path: target/surefire-reports/*.xml
           if-no-files-found: warn
           retention-days: 7
+          compression-level: 6  # Faster compression
 
       - name: Package JAR (optional)
         if: success()
         run: mvn clean package
 
-      - name: Upload JAR artifact
+      - name: Upload JAR artifact (unique per Java)
         if: success()
         uses: actions/upload-artifact@v4
         with:
@@ -60,26 +61,29 @@ jobs:
     needs: build-and-test
     if: always()
     steps:
-      - name: Download all test report artifacts
+      - name: Download test reports (fixed artifact name)
         uses: actions/download-artifact@v4
         with:
-          pattern: test-reports-java-*     # Matches all uploaded artifacts
+          name: test-reports-all
           path: test-reports/
-          merge-multiple: true             # Merges files from all artifacts
 
-      - name: Debug - List all downloaded files
+      - name: Debug - Show downloaded folder structure and XML files
         run: |
-          echo "Listing downloaded files:"
+          echo "Current directory:"
+          pwd
+          echo "Listing test-reports folder recursively:"
           ls -laR test-reports/ || true
-          echo "XML files found:"
-          find test-reports/ -name "*.xml" || true
+          echo "Finding all .xml files:"
+          find test-reports/ -type f -name "*.xml" -print || true
+          echo "Count of XML files:"
+          find test-reports/ -type f -name "*.xml" | wc -l || true
 
       - name: Publish Test Report Summary
         uses: dorny/test-reporter@v1
         with:
-          artifact: test-reports-java-*    # Pattern for downloaded artifacts
+          artifact: test-reports-all
           name: Java Maven Test Results
-          path: 'test-reports/**/*.xml'    # Find all XMLs in the merged folder
+          path: 'test-reports/**/*.xml'
           reporter: java-junit
           fail-on-error: false
 

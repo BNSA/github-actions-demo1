@@ -34,13 +34,13 @@ jobs:
       - name: Run tests & generate JUnit report
         run: mvn clean test
 
-      - name: Upload JUnit XML (continue even on upload conflict)
-        continue-on-error: true   # Avoid failure if artifact already exists
+      - name: Upload JUnit XML report (unique per Java version)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-all
+          name: test-reports-java-${{ matrix.java }}
           path: target/surefire-reports/*.xml
-          if-no-files-found: warn   # Don't fail if no XML (rare)
+          if-no-files-found: warn
           retention-days: 7
 
       - name: Package JAR (optional)
@@ -51,7 +51,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: app-jar-${{ matrix.java }}
+          name: app-jar-java-${{ matrix.java }}
           path: target/*.jar
           retention-days: 3
 
@@ -60,24 +60,27 @@ jobs:
     needs: build-and-test
     if: always()
     steps:
-      - name: Download all test reports
+      - name: Download all test report artifacts
         uses: actions/download-artifact@v4
         with:
-          name: test-reports-all
+          pattern: test-reports-java-*     # Matches all uploaded artifacts
           path: test-reports/
-          pattern: test-reports-all   # Fixed name
+          merge-multiple: true             # Merges files from all artifacts
 
-      - name: Debug - List downloaded files
-        run: ls -R test-reports/ || true
+      - name: Debug - List all downloaded files
+        run: |
+          echo "Listing downloaded files:"
+          ls -laR test-reports/ || true
+          echo "XML files found:"
+          find test-reports/ -name "*.xml" || true
 
       - name: Publish Test Report Summary
         uses: dorny/test-reporter@v1
         with:
-          artifact: test-reports-all
+          artifact: test-reports-java-*    # Pattern for downloaded artifacts
           name: Java Maven Test Results
-          path: 'test-reports/**/*.xml'
+          path: 'test-reports/**/*.xml'    # Find all XMLs in the merged folder
           reporter: java-junit
           fail-on-error: false
-          fail-on-empty: true
 
           

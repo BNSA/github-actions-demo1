@@ -1,0 +1,11 @@
+Summary of the Tasks
+Workflow name & trigger
+Multiple jobs (independent + dependent with needs)
+Secrets (masked in logs)
+Matrix strategy (3 variations, parallel execution)
+Intentional failure with visible ::error:: annotation
+continue-on-error: true (step fails → job still green)
+if: always() (artifacts saved even after failure)
+Multiple artifacts (TXT logs + JUnit XML reports)
+Dynamic content using ${{ matrix.test-group }}
+Upload artifacts with custom names per matrix row

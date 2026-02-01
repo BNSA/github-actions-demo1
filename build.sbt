@@ -13,3 +13,10 @@ Test / testOptions += Tests.Argument(
   "-u",
   "target/test-reports"
 )
+
+Test / testOptions += Tests.Argument(
+  TestFrameworks.ScalaTest,
+  "-u",
+  "target/scala-*/test-reports"
+)
+

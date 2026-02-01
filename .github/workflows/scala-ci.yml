@@ -29,7 +29,6 @@ jobs:
           distribution: temurin
           cache: sbt
 
-      # ✅ OFFICIAL, RELIABLE WAY
       - name: Set up sbt
         uses: sbt/setup-sbt@v1
 
@@ -39,12 +38,13 @@ jobs:
       - name: Test
         run: sbt ++${{ matrix.scala }}! test
 
+      # ✅ CORRECT sbt cross-build path
       - name: Upload JUnit XML reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-scala-${{ matrix.scala }}-java-${{ matrix.java }}
-          path: target/test-reports/*.xml
+          path: target/scala-*/test-reports/**/*.xml
           if-no-files-found: error
           retention-days: 7
 
@@ -64,7 +64,7 @@ jobs:
       - name: Publish Test Summary
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: "test-reports/**/*.xml"
+          report_paths: "test-reports/**/test-reports/**/*.xml"
           check_name: Scala sbt Test Results
           include_passed: true
           fail_on_failure: false

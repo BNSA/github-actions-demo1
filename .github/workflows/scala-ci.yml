@@ -1,4 +1,4 @@
-name: Scala CI (sbt build & test)
+name: Scala CI (sbt with JUnit XML)
 
 on:
   push:
@@ -10,23 +10,24 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         scala: ['2.13.15', '3.3.3']
         java: ['11', '17', '21']
 
-    name: Scala ${{ matrix.scala }} / Java ${{ matrix.java }}
+    name: Scala ${{ matrix.scala }} | Java ${{ matrix.java }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Set up JDK ${{ matrix.java }}
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          java-version: ${{ matrix.java }}
           distribution: temurin
+          java-version: ${{ matrix.java }}
           cache: sbt
 
       - name: Set up sbt
@@ -35,15 +36,15 @@ jobs:
       - name: Compile
         run: sbt ++${{ matrix.scala }}! compile
 
-      - name: Test
+      - name: Run tests (JUnit XML enabled)
         run: sbt ++${{ matrix.scala }}! test
 
-      # ✅ CORRECT sbt cross-build path
+      # sbt-junit-xml writes here
       - name: Upload JUnit XML reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-reports-scala-${{ matrix.scala }}-java-${{ matrix.java }}
+          name: junit-scala-${{ matrix.scala }}-java-${{ matrix.java }}
           path: target/scala-*/test-reports/**/*.xml
           if-no-files-found: error
           retention-days: 7
@@ -54,20 +55,20 @@ jobs:
     if: always()
 
     steps:
-      - name: Download test reports
+      - name: Download all test reports
         uses: actions/download-artifact@v4
         with:
-          pattern: test-reports-scala-*
-          path: test-reports
+          pattern: junit-scala-*
+          path: test-results
           merge-multiple: true
 
-      - name: Publish Test Summary
+      - name: Publish test summary
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: "test-reports/**/test-reports/**/*.xml"
-          check_name: Scala sbt Test Results
+          report_paths: "test-results/**/test-reports/**/*.xml"
+          check_name: "Scala sbt Test Results"
           include_passed: true
-          fail_on_failure: false
           require_tests: true
+          fail_on_failure: false
 
 

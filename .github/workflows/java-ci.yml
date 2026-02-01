@@ -63,9 +63,9 @@ jobs:
       - name: Download all test report artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: test-reports-java-*   # Downloads ALL matching artifacts
+          pattern: test-reports-java-*
           path: test-reports/
-          merge-multiple: true           # Merges files from all into one folder
+          merge-multiple: true
 
       - name: Debug - List downloaded files (before reporter)
         run: |
@@ -81,6 +81,8 @@ jobs:
         uses: dorny/test-reporter@v1
         with:
           name: Java Maven Test Results
-          path: 'test-reports/**/*.xml'   # Searches all subfolders for XML files
+          path: 'test-reports/*.xml,test-reports/**/*.xml'   # ← FIXED: catches both root and subfolders
           reporter: java-junit
           fail-on-error: false
+
+          

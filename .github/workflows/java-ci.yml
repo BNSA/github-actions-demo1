@@ -11,6 +11,27 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+  publish-test-results:
+    runs-on: ubuntu-latest
+    needs: build-and-test             # Wait for tests to finish
+    if: always()                      # Run even if tests fail
+    steps:
+      - name: Download test reports
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-report-java-*   # Matches your artifact names
+          path: test-reports/
+
+      - name: Publish Test Report
+        uses: dorny/test-reporter@v1
+        with:
+          artifact: junit-report-java-*   # wildcard to catch all
+          name: Java Maven Test Results
+          path: 'test-reports/**/*.xml'   # find all XML files
+          reporter: junit
+          fail-on-error: false
+
+
     strategy:
       fail-fast: false
       matrix:

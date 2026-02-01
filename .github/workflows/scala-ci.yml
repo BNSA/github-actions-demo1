@@ -29,25 +29,23 @@ jobs:
           distribution: temurin
           cache: sbt
 
-      # 🔑 THIS WAS MISSING
-      - name: Install sbt
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sbt
+      # ✅ OFFICIAL, RELIABLE WAY
+      - name: Set up sbt
+        uses: sbt/setup-sbt@v1
 
-      - name: Compile project
+      - name: Compile
         run: sbt ++${{ matrix.scala }}! compile
 
-      - name: Run tests & generate JUnit report
+      - name: Test
         run: sbt ++${{ matrix.scala }}! test
 
-      - name: Upload JUnit XML report (unique per combo)
+      - name: Upload JUnit XML reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports-scala-${{ matrix.scala }}-java-${{ matrix.java }}
           path: target/test-reports/*.xml
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 7
 
   publish-test-results:
@@ -56,27 +54,20 @@ jobs:
     if: always()
 
     steps:
-      - name: Download all test report artifacts
+      - name: Download test reports
         uses: actions/download-artifact@v4
         with:
           pattern: test-reports-scala-*
-          path: test-reports/
+          path: test-reports
           merge-multiple: true
 
-      - name: Debug - List downloaded files
-        run: |
-          echo "Listing test-reports recursively:"
-          ls -laR test-reports/ || true
-          echo "XML files found:"
-          find test-reports/ -type f -name "*.xml" -print || true
-
-      - name: Publish Test Report Summary
+      - name: Publish Test Summary
         uses: mikepenz/action-junit-report@v4
         with:
-          report_paths: 'test-reports/**/*.xml'
+          report_paths: "test-reports/**/*.xml"
           check_name: Scala sbt Test Results
           include_passed: true
           fail_on_failure: false
-          require_tests: false
+          require_tests: true
 
 

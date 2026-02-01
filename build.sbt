@@ -1,4 +1,4 @@
-scalaVersion := "2.13.15"  // Default – overridden by matrix in workflow
+scalaVersion := "2.13.15"
 
 name := "scala-github-actions-demo"
 version := "0.1"
@@ -7,4 +7,9 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.2.19" % Test
 )
 
-testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-u", "target/test-reports")  // Generates JUnit XML reports
+// Correct sbt 1.x syntax for JUnit XML
+Test / testOptions += Tests.Argument(
+  TestFrameworks.ScalaTest,
+  "-u",
+  "target/test-reports"
+)

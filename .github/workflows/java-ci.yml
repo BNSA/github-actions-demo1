@@ -72,7 +72,7 @@ jobs:
           artifact: test-reports-java-*    # Pattern to find downloaded artifacts
           name: Java Maven Test Results
           path: 'test-reports/**/surefire-reports/*.xml'   # Find all XMLs in downloaded folders
-          reporter: junit                  # Correct value – no quotes
+          reporter: java-junit                  # Correct value – no quotes
           fail-on-error: false
 
           
